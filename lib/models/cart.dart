@@ -68,6 +68,7 @@ class CartState {
     this.status = CheckoutStatus.idle,
     this.orderId,
     this.checkoutError,
+    this.history = const [],
   });
 
   final List<CartLine> lines;
@@ -76,11 +77,13 @@ class CartState {
   final CheckoutStatus status;
   final String? orderId;
   final String? checkoutError;
+  final List<CartState> history;
 
   int get itemCount => lines.itemCount;
   double get subtotal => lines.subtotal;
   double get discount => coupon == 'SAVE10' ? subtotal * 0.10 : 0.0;
   double get total => subtotal - discount;
+  bool get canUndo => history.isNotEmpty;
 
   CartState copyWith({
     List<CartLine>? lines,
@@ -91,6 +94,7 @@ class CartState {
     CheckoutStatus? status,
     String? orderId,
     String? checkoutError,
+    List<CartState>? history,
   }) {
     return CartState(
       lines: lines ?? this.lines,
@@ -99,6 +103,7 @@ class CartState {
       status: status ?? this.status,
       orderId: orderId ?? this.orderId,
       checkoutError: checkoutError ?? this.checkoutError,
+      history: history ?? this.history,
     );
   }
 
@@ -118,9 +123,10 @@ class CartState {
       other.couponError == couponError &&
       other.status == status &&
       other.orderId == orderId &&
-      other.checkoutError == checkoutError;
+      other.checkoutError == checkoutError &&
+      listEquals(other.history, history);
 
   @override
   int get hashCode => Object.hash(Object.hashAll(lines), coupon, couponError,
-      status, orderId, checkoutError);
+      status, orderId, checkoutError, Object.hashAll(history));
 }
