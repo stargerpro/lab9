@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Product {
   const Product({required this.id, required this.name, required this.price});
   final String id;
@@ -20,6 +22,13 @@ class CartLine {
 
   CartLine copyWith({int? qty}) =>
       CartLine(product: product, qty: qty ?? this.qty);
+
+  @override
+  bool operator ==(Object other) =>
+      other is CartLine && other.product.id == product.id && other.qty == qty;
+
+  @override
+  int get hashCode => Object.hash(product.id, qty);
 }
 
 extension CartLines on List<CartLine> {
@@ -35,7 +44,6 @@ extension CartLines on List<CartLine> {
   List<CartLine> without(String productId) =>
       [for (final l in this) if (l.product.id != productId) l];
 
-  // T1: Quantity stepper helper
   List<CartLine> changeQty(String id, int delta) {
     return [
       for (final l in this)
@@ -50,10 +58,8 @@ extension CartLines on List<CartLine> {
   int get itemCount => fold(0, (s, l) => s + l.qty);
 }
 
-// T4: Checkout status enum
 enum CheckoutStatus { idle, submitting, success, failure }
 
-// T2, T3, T4: Full CartState with derived getters
 class CartState {
   const CartState({
     this.lines = const [],
@@ -71,7 +77,6 @@ class CartState {
   final String? orderId;
   final String? checkoutError;
 
-  // T3: Derived getters (never stored fields)
   int get itemCount => lines.itemCount;
   double get subtotal => lines.subtotal;
   double get discount => coupon == 'SAVE10' ? subtotal * 0.10 : 0.0;
@@ -90,26 +95,32 @@ class CartState {
     return CartState(
       lines: lines ?? this.lines,
       coupon: clearCoupon ? null : (coupon ?? this.coupon),
-      couponError:
-          clearCouponError ? null : (couponError ?? this.couponError),
+      couponError: clearCouponError ? null : (couponError ?? this.couponError),
       status: status ?? this.status,
       orderId: orderId ?? this.orderId,
       checkoutError: checkoutError ?? this.checkoutError,
     );
   }
 
-  // T2: Apply coupon logic
   CartState applyCoupon(String code) {
     final trimmed = code.trim();
     if (trimmed == 'SAVE10') {
-      return copyWith(
-        coupon: 'SAVE10',
-        clearCouponError: true,
-      );
-    } else {
-      return copyWith(
-        couponError: 'Invalid coupon',
-      );
+      return copyWith(coupon: 'SAVE10', clearCouponError: true);
     }
+    return copyWith(couponError: 'Invalid coupon');
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is CartState &&
+      listEquals(other.lines, lines) &&
+      other.coupon == coupon &&
+      other.couponError == couponError &&
+      other.status == status &&
+      other.orderId == orderId &&
+      other.checkoutError == checkoutError;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(lines), coupon, couponError,
+      status, orderId, checkoutError);
 }
