@@ -115,6 +115,31 @@ class CartState {
     return copyWith(couponError: 'Invalid coupon');
   }
 
+  CartState validateCoupon(String code) {
+    if (code.trim().isEmpty) return copyWith(clearCouponError: true);
+    return applyCoupon(code);
+  }
+
+  Map<String, dynamic> toJson() => {
+        'lines': [
+          for (final l in lines) {'id': l.product.id, 'qty': l.qty},
+        ],
+        'coupon': coupon,
+      };
+
+  static CartState fromJson(Map<String, dynamic> json) {
+    final lines = <CartLine>[];
+    for (final item in json['lines'] as List) {
+      final map = item as Map;
+      for (final p in catalog) {
+        if (p.id == map['id']) {
+          lines.add(CartLine(product: p, qty: map['qty'] as int));
+        }
+      }
+    }
+    return CartState(lines: lines, coupon: json['coupon'] as String?);
+  }
+
   @override
   bool operator ==(Object other) =>
       other is CartState &&

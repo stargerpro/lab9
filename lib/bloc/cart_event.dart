@@ -25,6 +25,11 @@ final class CartCouponApplied extends CartEvent {
   final String code;
 }
 
+final class CartCouponTyped extends CartEvent {
+  const CartCouponTyped(this.code);
+  final String code;
+}
+
 final class CartCheckoutRequested extends CartEvent {
   const CartCheckoutRequested();
 }

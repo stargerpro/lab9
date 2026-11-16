@@ -1,8 +1,12 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:stream_transform/stream_transform.dart';
 import '../models/cart.dart';
 import '../services/checkout_api.dart';
 import 'cart_event.dart';
+
+EventTransformer<E> debounceTransformer<E>(Duration duration) =>
+    (events, mapper) => events.debounce(duration).switchMap(mapper);
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   CartBloc(this._api) : super(const CartState()) {
@@ -14,6 +18,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         state.copyWith(lines: state.lines.changeQty(event.productId, event.delta))));
     on<CartCouponApplied>(
         (event, emit) => _apply(event, emit, state.applyCoupon(event.code)));
+    on<CartCouponTyped>(
+      (event, emit) => _apply(event, emit, state.validateCoupon(event.code)),
+      transformer: debounceTransformer(const Duration(milliseconds: 400)),
+    );
     on<CartUndone>(_onUndone);
     on<CartCheckoutRequested>(_onCheckout, transformer: droppable());
   }
@@ -26,7 +34,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         CartQtyChanged() ||
         CartCouponApplied() =>
           true,
-        CartCheckoutRequested() || CartUndone() => false,
+        CartCouponTyped() || CartCheckoutRequested() || CartUndone() => false,
       };
 
   void _apply(CartEvent event, Emitter<CartState> emit, CartState next) {

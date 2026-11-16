@@ -84,6 +84,7 @@ class _RiverpodCartPageState extends ConsumerState<RiverpodCartPage> {
                 Expanded(
                   child: TextField(
                     controller: _couponController,
+                    onChanged: cart.couponTyped,
                     decoration: InputDecoration(
                       labelText: 'Coupon code',
                       errorText: state.couponError,

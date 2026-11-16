@@ -5,13 +5,14 @@ import '../services/checkout_api.dart';
 import '../widgets/cart_body.dart';
 import 'cart_bloc.dart';
 import 'cart_event.dart';
+import 'persisted_cart_bloc.dart';
 
 class BlocCartPage extends StatelessWidget {
   const BlocCartPage({super.key});
 
   @override
-  Widget build(BuildContext context) => BlocProvider(
-        create: (_) => CartBloc(CheckoutApi()),
+  Widget build(BuildContext context) => BlocProvider<CartBloc>(
+        create: (_) => PersistedCartBloc(CheckoutApi()),
         child: const _BlocCartView(),
       );
 }
@@ -111,6 +112,7 @@ class _BlocCartViewState extends State<_BlocCartView> {
                       Expanded(
                         child: TextField(
                           controller: _couponController,
+                          onChanged: (text) => bloc.add(CartCouponTyped(text)),
                           decoration: InputDecoration(
                             labelText: 'Coupon code',
                             errorText: state.couponError,

@@ -1,14 +1,31 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cart.dart';
 import '../services/checkout_api.dart';
 
 final checkoutApiProvider = Provider<CheckoutApi>((ref) => CheckoutApi());
 
+final sharedPrefsProvider = Provider<SharedPreferences?>((ref) => null);
+
+const _cartKey = 'riverpod_cart';
+
 class CartNotifier extends Notifier<CartState> {
   final _history = <CartState>[];
+  Timer? _couponTimer;
 
   @override
-  CartState build() => const CartState();
+  CartState build() {
+    ref.onDispose(() => _couponTimer?.cancel());
+    final prefs = ref.watch(sharedPrefsProvider);
+    listenSelf((previous, next) {
+      prefs?.setString(_cartKey, jsonEncode(next.toJson()));
+    });
+    final saved = prefs?.getString(_cartKey);
+    if (saved == null) return const CartState();
+    return CartState.fromJson(jsonDecode(saved) as Map<String, dynamic>);
+  }
 
   bool get canUndo => _history.isNotEmpty;
 
@@ -32,6 +49,13 @@ class CartNotifier extends Notifier<CartState> {
   void applyCoupon(String code) {
     _save();
     state = state.applyCoupon(code);
+  }
+
+  void couponTyped(String code) {
+    _couponTimer?.cancel();
+    _couponTimer = Timer(const Duration(milliseconds: 400), () {
+      state = state.validateCoupon(code);
+    });
   }
 
   void undo() {
